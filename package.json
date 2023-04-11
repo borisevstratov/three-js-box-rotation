@@ -1,0 +1,21 @@
+{
+  "name": "three-sandbox",
+  "version": "1.0.0",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel index.html --open",
+    "build": "parcel build index.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/three": "0.130.0",
+    "three": "0.130.0",
+    "three-full": "28.0.2"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.5",
+    "typescript": "^5.0.4"
+  }
+}
