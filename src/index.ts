@@ -1,9 +1,14 @@
 import * as THREE130 from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+
+// #region INITIAL SETUP
+const renderer = new THREE130.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
 const scene = new THREE130.Scene();
 scene.background = new THREE130.Color("gray");
 
-// #region CAMERA
 
 const camera = new THREE130.PerspectiveCamera(
     50,
@@ -11,9 +16,14 @@ const camera = new THREE130.PerspectiveCamera(
     0.01,
     100000,
 );
-camera.position.x = 169.0136027223;
-camera.position.y = 45.5502155361;
-camera.position.z = 120.9541529967;
+
+const controls = new OrbitControls(camera, renderer.domElement)
+
+camera.position.set(
+    169.0136027223,
+    45.5502155361,
+    120.9541529967,
+)
 
 camera.applyQuaternion(
     new THREE130.Quaternion(
@@ -46,6 +56,7 @@ const boxQN = new THREE130.Quaternion(
     0.2374096503,
     0.8806357374
 );
+const boxRM = new THREE130.Matrix4().makeRotationFromQuaternion(boxQN);
 
 // #endregion
 
@@ -58,53 +69,76 @@ const normals = [
     new THREE130.Vector3(0, 0, -1)
 ];
 
-const boxRotationMatrix = new THREE130.Matrix4();
-boxRotationMatrix.makeRotationFromQuaternion(boxQN);
-const testbox = new THREE130.Box3(minPt, maxPt);
-
-const helper1 = new THREE130.Box3Helper(testbox, new THREE130.Color("red"));
-scene.add(helper1);
-
-const helper2 = new THREE130.Box3Helper(
-    box3,
-    new THREE130.Color("yellow")
-).applyQuaternion(boxQN);
-scene.add(helper2);
-
-
-
-const planeGeometry = new THREE130.PlaneGeometry(500, 500);
-const material = new THREE130.MeshBasicMaterial({
+const planeMaterial = new THREE130.MeshBasicMaterial({
     color: "brown",
     transparent: true,
     opacity: 0.7,
     side: THREE130.DoubleSide
 });
-const planes = new THREE130.Mesh(planeGeometry, material)
-// scene.add(planes)
 
+const sphere = new THREE130.SphereGeometry(3, 100, 100);
+
+const box3helper1 = new THREE130.Box3Helper(box3, new THREE130.Color("red"));
+scene.add(box3helper1);
+
+const box3helper2 = new THREE130.Box3Helper(box3, new THREE130.Color("yellow"))
+box3helper2.applyQuaternion(boxQN);
+scene.add(box3helper2);
+
+const boxVertices = [
+    new THREE130.Vector3(box3.min.x, box3.min.y, box3.min.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.min.x, box3.min.y, box3.max.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.min.x, box3.max.y, box3.min.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.min.x, box3.max.y, box3.max.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.max.x, box3.min.y, box3.min.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.max.x, box3.min.y, box3.max.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.max.x, box3.max.y, box3.min.z).applyMatrix4(boxRM),
+    new THREE130.Vector3(box3.max.x, box3.max.y, box3.max.z).applyMatrix4(boxRM),
+];
+
+boxVertices.forEach(vertex => {
+    const vSphereObj = new THREE130.Mesh(sphere, new THREE130.LineBasicMaterial({ color: "green" }));
+    vSphereObj.position.x = vertex.x
+    vSphereObj.position.y = vertex.y
+    vSphereObj.position.z = vertex.z
+
+    scene.add(vSphereObj)
+})
+
+const boxPlanes = [
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[1], boxVertices[2]), // bottom
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[4], boxVertices[6], boxVertices[5]), // top
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[2], boxVertices[4]), // left
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[1], boxVertices[5], boxVertices[3]), // right
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[2], boxVertices[6], boxVertices[4]), // front
+    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[4], boxVertices[5]), // back
+];
+
+boxPlanes.forEach(plane => {
+    const planeObj = new THREE130.PlaneHelper(plane, 1, 0xffc500);
+    scene.add(planeObj);
+})
+
+console.log("box3", box3)
+console.log("box3helper1.box", box3helper1.box)
+console.log("box3helper2.box", box3helper2.box)
+
+console.log("box3helper1.matrixWorld", box3helper1.matrixWorld)
+console.log("box3helper2.matrixWorld", box3helper2.matrixWorld)
+
+console.log(box3helper2)
 
 const edges = new THREE130.EdgesGeometry(new THREE130.BoxGeometry(200, 200, 100))
 const lines = new THREE130.LineSegments(edges, new THREE130.LineBasicMaterial({ color: "aqua" }))
-// scene.add(lines)
 
+animate()
 
-console.log(helper2)
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update(); // only required if controls.enableDamping = true, or if controls.autoRotate = true
+    render();
+}
 
-const renderer = new THREE130.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-const sphere = new THREE130.SphereGeometry(5, 100, 100);
-
-const sphere1 = new THREE130.Mesh(sphere, new THREE130.LineBasicMaterial({ color: "green" }));
-sphere1.position.x = 123.6215543063
-sphere1.position.y = 179.6533807719
-sphere1.position.z = 52.3180612734
-sphere1.applyQuaternion(boxQN)
-
-scene.add(sphere1)
-console.log(sphere1);
-
-renderer.render(scene, camera);
-
+function render() {
+    renderer.render(scene, camera);
+}
