@@ -1,18 +1,5 @@
 import * as THREE130 from "three";
 
-function rotateVertex(vertex: THREE130.Vector3, quaternion: THREE130.Quaternion) {
-    const wQ = quaternion.w;
-    const xQ = quaternion.x;
-    const yQ = quaternion.y;
-    const zQ = quaternion.z;
-
-    const xR = (wQ ** 2 + xQ ** 2 - yQ ** 2 - zQ ** 2) * vertex.x + 2 * (xQ * yQ - wQ * zQ) * vertex.y + 2 * (xQ * zQ + wQ * yQ) * vertex.z
-    const yR = 2 * (xQ * yQ + wQ * zQ) * vertex.x + (wQ ** 2 - xQ ** 2 + yQ ** 2 - zQ ** 2) * vertex.y + 2 * (yQ * zQ - wQ * xQ) * vertex.z
-    const zR = 2 * (xQ * zQ - wQ * yQ) * vertex.x + 2 * (yQ * zQ + wQ * xQ) * vertex.y + (wQ ** 2 - xQ ** 2 - yQ ** 2 + zQ ** 2) * vertex.z
-
-    return new THREE130.Vector3(xR, yR, zR)
-}
-
 export default function calculateRotatedCubeVertexPosition(minPt: THREE130.Vector3, maxPt: THREE130.Vector3, boxQN: THREE130.Quaternion) {
 
     const sourceMinPt = new THREE130.Vector3(minPt.x, minPt.y, minPt.z)
@@ -38,23 +25,27 @@ export default function calculateRotatedCubeVertexPosition(minPt: THREE130.Vecto
         new THREE130.Vector3(maxPtC.x, maxPtC.y, maxPtC.z),
     ]
 
-    const rotatedVertices = vertices.map(v => rotateVertex(v, boxQN).add(cubeCenter));
-
+    const rotatedVertices = vertices.map(v => v.applyQuaternion(boxQN).add(cubeCenter));
 
     const planes = [
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[0], rotatedVertices[1], rotatedVertices[2]), // bottom
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[4], rotatedVertices[6], rotatedVertices[5]), // top
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[0], rotatedVertices[2], rotatedVertices[4]), // left
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[1], rotatedVertices[5], rotatedVertices[3]), // right
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[2], rotatedVertices[6], rotatedVertices[4]), // front
-        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[0], rotatedVertices[4], rotatedVertices[5]), // back
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[0], rotatedVertices[1], rotatedVertices[2]), // -x face
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[1], rotatedVertices[5], rotatedVertices[7]), // +z face
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[5], rotatedVertices[4], rotatedVertices[6]), // +x face
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[4], rotatedVertices[0], rotatedVertices[2]), // -z face
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[2], rotatedVertices[3], rotatedVertices[6]), // -y face
+        new THREE130.Plane().setFromCoplanarPoints(rotatedVertices[1], rotatedVertices[0], rotatedVertices[4]), // +y face
     ];
 
-    planes.forEach(plane => {
-        const planeVec = [...plane.normal.toArray(), plane.constant]
-        console.log(plane, planeVec)
-    })
+    const forgePlanes = planes.map(plane => {
+        return new THREE130.Vector4(plane.normal.x, plane.normal.y, plane.normal.z, plane.constant).toArray();
+    });
 
-    return { rotatedVertices, planes }
+    console.log(JSON.stringify(forgePlanes))
+
+    return {
+        rotatedVertices,
+        planes,
+        forgePlanes,
+    };
 
 }

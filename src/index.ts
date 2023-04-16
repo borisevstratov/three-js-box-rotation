@@ -55,61 +55,27 @@ const boxQN = new THREE130.Quaternion(
     0.1500588158,
     -0.3815752977,
     0.2374096503,
-    0.8806357374
+    0.8806357374,
+
+    // 0, 0, 0, 0
 );
-const boxRM = new THREE130.Matrix4().makeRotationFromQuaternion(boxQN);
 
 const { rotatedVertices, planes } = calculateRotatedCubeVertexPosition(minPt, maxPt, boxQN);
 
-console.log("res", { rotatedVertices, planes })
-
-console.log("boxQN", boxQN)
-console.log("boxRM", boxRM)
-
 // #endregion
 
-const normals = [
-    new THREE130.Vector3(1, 0, 0),
-    new THREE130.Vector3(0, 1, 0),
-    new THREE130.Vector3(0, 0, 1),
-    new THREE130.Vector3(-1, 0, 0),
-    new THREE130.Vector3(0, -1, 0),
-    new THREE130.Vector3(0, 0, -1)
-];
-
-const planeMaterial = new THREE130.MeshBasicMaterial({
-    color: "brown",
-    transparent: true,
-    opacity: 0.7,
-    side: THREE130.DoubleSide
-});
-
-const sphere = new THREE130.SphereGeometry(3, 100, 100);
-
-const box3helper1 = new THREE130.Box3Helper(box3, new THREE130.Color("blue"));
+const box3helper1 = new THREE130.Box3Helper(box3, new THREE130.Color("red"));
 scene.add(box3helper1);
 
-const box3helper2 = new THREE130.Box3Helper(box3, new THREE130.Color("orange"))
+const box3helper2 = new THREE130.Box3Helper(box3, new THREE130.Color("green"))
 box3helper2.applyQuaternion(boxQN);
 scene.add(box3helper2);
 
-const box3helper3 = new THREE130.Box3Helper(box3, new THREE130.Color("green"))
-box3helper3.applyMatrix4(boxRM);
-// scene.add(box3helper3);
-
-const boxVertices = [
-    new THREE130.Vector3(box3.min.x, box3.min.y, box3.min.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.min.x, box3.min.y, box3.max.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.min.x, box3.max.y, box3.min.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.min.x, box3.max.y, box3.max.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.max.x, box3.min.y, box3.min.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.max.x, box3.min.y, box3.max.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.max.x, box3.max.y, box3.min.z).applyMatrix4(boxRM),
-    new THREE130.Vector3(box3.max.x, box3.max.y, box3.max.z).applyMatrix4(boxRM),
-];
-
 rotatedVertices.forEach(vertex => {
-    const vSphereObj = new THREE130.Mesh(sphere, new THREE130.LineBasicMaterial({ color: "green" }));
+    const vSphereObj = new THREE130.Mesh(
+        new THREE130.SphereGeometry(3, 100, 100),
+        new THREE130.LineBasicMaterial({ color: "green" }),
+    );
     vSphereObj.position.x = vertex.x
     vSphereObj.position.y = vertex.y
     vSphereObj.position.z = vertex.z
@@ -117,56 +83,13 @@ rotatedVertices.forEach(vertex => {
     scene.add(vSphereObj)
 })
 
-const boxPlanes = [
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[1], boxVertices[2]), // bottom
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[4], boxVertices[6], boxVertices[5]), // top
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[2], boxVertices[4]), // left
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[1], boxVertices[5], boxVertices[3]), // right
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[2], boxVertices[6], boxVertices[4]), // front
-    new THREE130.Plane().setFromCoplanarPoints(boxVertices[0], boxVertices[4], boxVertices[5]), // back
-];
+planes.forEach(plane => {
+    const boxCutplane = new THREE130.Vector4(plane.normal.x, plane.normal.y, plane.normal.z, plane.constant);
+    console.log(plane, boxCutplane.toArray())
 
-boxPlanes.forEach(plane => {
-    const planeVec = [...plane.normal.toArray(), plane.constant]
-    console.log(plane, planeVec)
-
-
-    const planeObj = new THREE130.PlaneHelper(plane, 1, 0xffc500);
+    const planeObj = new THREE130.PlaneHelper(plane, 200, 0xffc500);
     scene.add(planeObj);
 })
-
-
-// compute the center and size of the box
-const center = new THREE130.Vector3();
-box3.getCenter(center);
-const size = new THREE130.Vector3();
-box3.getSize(size);
-
-// create a BoxGeometry with the computed center and size
-const boxGeometry = new THREE130.BoxGeometry(size.x, size.y, size.z);
-boxGeometry.translate(center.x, center.y, center.z);
-
-const cube = new THREE130.Mesh(boxGeometry, planeMaterial);
-cube.applyMatrix4(boxRM);
-scene.add(cube);
-
-boxGeometry.computeBoundingBox()
-console.log("boxGeometry", boxGeometry.boundingBox)
-console.log("cube", cube)
-
-
-
-
-console.log("box3", box3)
-console.log("box3helper1", box3helper1)
-console.log("box3helper2", box3helper2)
-
-console.log("box3helper1.box", box3helper1.box)
-console.log("box3helper2.box", box3helper2.box)
-console.log("boxPlanes", boxPlanes)
-
-const edges = new THREE130.EdgesGeometry(new THREE130.BoxGeometry(200, 200, 100))
-const lines = new THREE130.LineSegments(edges, new THREE130.LineBasicMaterial({ color: "aqua" }))
 
 animate()
 
